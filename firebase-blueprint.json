@@ -1,0 +1,236 @@
+{
+  "entities": {
+    "Waypoint": {
+      "title": "Waypoint",
+      "description": "Nautical marker, hazard, anchorage, boat ramp, or marina created by a mariner.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the waypoint"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner mariner user ID"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Name or landmark label for the waypoint"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["hazard", "anchorage", "ramp", "fuel", "lock", "fishing", "general"],
+          "description": "Nautical category for marine chart symbol"
+        },
+        "lat": {
+          "type": "number",
+          "description": "WGS-84 Latitude in decimal degrees"
+        },
+        "lng": {
+          "type": "number",
+          "description": "WGS-84 Longitude in decimal degrees"
+        },
+        "depthFt": {
+          "type": "number",
+          "description": "Reported water depth in feet"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Navigational notices or mariner remarks"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp in epoch milliseconds"
+        }
+      },
+      "required": ["id", "userId", "name", "category", "lat", "lng", "createdAt"]
+    },
+    "SavedRoute": {
+      "title": "SavedRoute",
+      "description": "Recorded GPS track log and navigational route with depth sounder profile.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique route record ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner mariner user ID"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Route name or voyage title"
+        },
+        "riverName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Waterway navigated"
+        },
+        "distanceNm": {
+          "type": "number",
+          "description": "Total distance traveled in nautical miles"
+        },
+        "durationSec": {
+          "type": "number",
+          "description": "Voyage duration in seconds"
+        },
+        "pointsCount": {
+          "type": "number",
+          "description": "Number of track breadcrumb points"
+        },
+        "maxSpeedKnots": {
+          "type": "number",
+          "description": "Peak vessel speed recorded"
+        },
+        "avgDepthFt": {
+          "type": "number",
+          "description": "Average recorded water depth"
+        },
+        "minDepthFt": {
+          "type": "number",
+          "description": "Shallowest water depth encountered"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp in epoch milliseconds"
+        }
+      },
+      "required": ["id", "userId", "name", "riverName", "distanceNm", "durationSec", "createdAt"]
+    },
+    "FleetVessel": {
+      "title": "FleetVessel",
+      "description": "Live vessel position, speed, and telemetry tracked across waterways.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique vessel or skipper identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Authenticated user ID"
+        },
+        "vesselName": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Name of the vessel"
+        },
+        "skipperName": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Name of captain or skipper"
+        },
+        "vesselType": {
+          "type": "string",
+          "enum": ["cruiser", "sailboat", "tug_tow", "skiff", "commercial"],
+          "description": "Vessel classification"
+        },
+        "lat": {
+          "type": "number",
+          "description": "Current latitude coordinate"
+        },
+        "lng": {
+          "type": "number",
+          "description": "Current longitude coordinate"
+        },
+        "speedKnots": {
+          "type": "number",
+          "description": "Current Speed Over Ground"
+        },
+        "headingDeg": {
+          "type": "number",
+          "description": "Course Over Ground in degrees"
+        },
+        "riverName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Active river waterway"
+        },
+        "downloadAccess": {
+          "type": "string",
+          "enum": ["granted", "revoked", "trial", "restricted"],
+          "description": "Offline chart download license status"
+        },
+        "downloadQuotaMb": {
+          "type": "number",
+          "description": "Allocated download quota in megabytes"
+        },
+        "downloadUsedMb": {
+          "type": "number",
+          "description": "Downloaded chart packs total in megabytes"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last telemetry ping timestamp"
+        }
+      },
+      "required": ["id", "userId", "vesselName", "lat", "lng", "updatedAt"]
+    },
+    "DownloadAuditLog": {
+      "title": "DownloadAuditLog",
+      "description": "Audit record of an offline chart pack download operation.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique log entry ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User requesting the download"
+        },
+        "userName": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "User display name"
+        },
+        "packName": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Title of the downloaded chart pack"
+        },
+        "riverName": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "River region"
+        },
+        "packSizeMb": {
+          "type": "number",
+          "description": "Payload size in megabytes"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Operation timestamp"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["completed", "denied", "revoked"],
+          "description": "License authorization result"
+        }
+      },
+      "required": ["id", "userId", "packName", "riverName", "packSizeMb", "timestamp", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/waypoints/{waypointId}": {
+      "schema": "Waypoint",
+      "description": "Personal waypoints and navigational markers created by the user."
+    },
+    "/users/{userId}/routes/{routeId}": {
+      "schema": "SavedRoute",
+      "description": "GPS voyage logs and depth sounding histories saved by the user."
+    },
+    "/fleet_vessels/{vesselId}": {
+      "schema": "FleetVessel",
+      "description": "Live GPS coordinates and navigation telemetry for vessels on water."
+    },
+    "/download_audit_logs/{logId}": {
+      "schema": "DownloadAuditLog",
+      "description": "Regulatory audit trail of offline map downloads and quota usage."
+    }
+  }
+}

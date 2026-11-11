@@ -1,0 +1,10 @@
+{
+  "name": "RiverNav Nautical Chartplotter",
+  "description": "Professional river nautical navigation system with real-time current overlays, depth sounder integration, offline caching, and emergency beacon.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email == 'jimdbrownau@gmail.com' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Helpers
+    function isValidWaypoint(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'category', 'lat', 'lng', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'name', 'category', 'lat', 'lng', 'depthFt', 'notes', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.category in ['hazard', 'anchorage', 'ramp', 'fuel', 'lock', 'fishing', 'general'] &&
+        data.lat is number &&
+        data.lng is number &&
+        (!('depthFt' in data) || data.depthFt is number) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+        data.createdAt is number;
+    }
+
+    function isValidRoute(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'riverName', 'distanceNm', 'durationSec', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'name', 'riverName', 'distanceNm', 'durationSec', 'pointsCount', 'maxSpeedKnots', 'avgDepthFt', 'minDepthFt', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+        data.riverName is string && data.riverName.size() <= 100 &&
+        data.distanceNm is number &&
+        data.durationSec is number &&
+        (!('pointsCount' in data) || data.pointsCount is number) &&
+        (!('maxSpeedKnots' in data) || data.maxSpeedKnots is number) &&
+        (!('avgDepthFt' in data) || data.avgDepthFt is number) &&
+        (!('minDepthFt' in data) || data.minDepthFt is number) &&
+        data.createdAt is number;
+    }
+
+    function isValidFleetVessel(data) {
+      return data.keys().hasAll(['id', 'userId', 'vesselName', 'lat', 'lng', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'vesselName', 'skipperName', 'vesselType', 'lat', 'lng', 'speedKnots', 'headingDeg', 'riverName', 'downloadAccess', 'downloadQuotaMb', 'downloadUsedMb', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string &&
+        data.vesselName is string && data.vesselName.size() <= 80 &&
+        (!('skipperName' in data) || (data.skipperName is string && data.skipperName.size() <= 80)) &&
+        (!('vesselType' in data) || data.vesselType in ['cruiser', 'sailboat', 'tug_tow', 'skiff', 'commercial']) &&
+        data.lat is number &&
+        data.lng is number &&
+        (!('speedKnots' in data) || data.speedKnots is number) &&
+        (!('headingDeg' in data) || data.headingDeg is number) &&
+        (!('riverName' in data) || (data.riverName is string && data.riverName.size() <= 100)) &&
+        (!('downloadAccess' in data) || data.downloadAccess in ['granted', 'revoked', 'trial', 'restricted']) &&
+        (!('downloadQuotaMb' in data) || data.downloadQuotaMb is number) &&
+        (!('downloadUsedMb' in data) || data.downloadUsedMb is number) &&
+        data.updatedAt is number;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['id', 'userId', 'packName', 'riverName', 'packSizeMb', 'timestamp', 'status']) &&
+        data.keys().hasOnly(['id', 'userId', 'userName', 'vesselName', 'packName', 'riverName', 'packSizeMb', 'timestamp', 'location', 'ipAddress', 'status']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId == request.auth.uid &&
+        data.packName is string && data.packName.size() <= 120 &&
+        data.riverName is string && data.riverName.size() <= 80 &&
+        data.packSizeMb is number &&
+        data.timestamp is number &&
+        data.status in ['completed', 'denied', 'revoked'];
+    }
+
+    // Admin collection
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only manageable via console
+    }
+
+    // User Waypoints Subcollection
+    match /users/{userId}/waypoints/{waypointId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidId(waypointId) && isValidWaypoint(incoming());
+      allow update: if isOwner(userId) && isValidId(waypointId) && isValidWaypoint(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // User Saved Routes Subcollection
+    match /users/{userId}/routes/{routeId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidId(routeId) && isValidRoute(incoming());
+      allow update: if isOwner(userId) && isValidId(routeId) && isValidRoute(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Fleet Vessels Live Telemetry
+    match /fleet_vessels/{vesselId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(vesselId) && isValidFleetVessel(incoming()) && (
+        (incoming().userId == request.auth.uid && (!('downloadAccess' in incoming()) || incoming().downloadAccess == 'trial')) ||
+        isAdmin()
+      );
+      allow update: if isSignedIn() && isValidId(vesselId) && isValidFleetVessel(incoming()) && (
+        isAdmin() ||
+        (
+          existing().userId == request.auth.uid &&
+          incoming().userId == existing().userId &&
+          // Standard users cannot alter licensing fields
+          (!incoming().diff(existing()).affectedKeys().hasAny(['downloadAccess', 'downloadQuotaMb']))
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Download Audit Logs (Append-Only)
+    match /download_audit_logs/{logId} {
+      allow get, list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(logId) && isValidAuditLog(incoming());
+      allow update, delete: if false; // Audit logs are immutable and append-only
+    }
+  }
+}
